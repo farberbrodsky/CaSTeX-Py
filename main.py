@@ -238,11 +238,16 @@ class Power(DefaultOperators):
         self.b = b
 
     def simplified(self):
-        if self.b == 1:
+        if self.a != 0 and self.b == 0:
+            return 1
+        elif self.b == 1:
             return self.a
         elif type(self.a) == Power:
             # (a^m)^n == a^(mn)
             return Power(self.a.a, self.a.b * self.b)
+        elif type(self.a) == Multiplication:
+            # (abc)^m = a^m * b^m * c^m
+            return Multiplication([Power(a, self.b) for a in self.a.parts])
         else:
             return Power(simplify(self.a), simplify(self.b))
 
@@ -316,11 +321,11 @@ class Complex(DefaultOperators):
 #     3
 # ])
 #
+# x = Multiplication([Power(3, 0.5), Power(4, 3)])
+#
+# x = Multiplication([Power(3, 0.5), Power(3, 4)])
+#
+# x = Power(Multiplication([Fraction(2, 3), Fraction(4, 5)]), 3)
+#
 # print(x)
 # print(simplify(x))
-#
-# y = Multiplication([Power(3, 0.5), Power(4, 3)])
-# print(simplify(y))
-#
-# y = Multiplication([Power(3, 0.5), Power(3, 4)])
-# print(simplify(y))
