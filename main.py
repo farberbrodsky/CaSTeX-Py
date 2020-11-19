@@ -27,7 +27,7 @@ class DefaultOperators:
         return self + other.__neg__()
 
     def __mul__(self, other):
-        pass
+        return Multiplication([self, other])
 
     def __truediv__(self, other):
         return Fraction(self, other)
@@ -181,6 +181,57 @@ class Addition(DefaultOperators):
         return "+".join(["(" + str(p) + ")" for p in self.parts])
 
 
+class Multiplication(DefaultOperators):
+    def __init__(self, parts):
+        self.parts = parts
+
+    def simplified(self):
+        if len(self.parts) == 0:
+            return 0
+        elif len(self.parts) == 1:
+            return self.parts[0]
+        # Try to multiply different parts
+        for a_index, a in enumerate(self.parts):
+            found_b = False
+            for b_index, b in enumerate(self.parts):
+                if b_index == a_index:
+                    continue
+                try:
+                    x = a * b
+                    if x is not None and not type(x) is Multiplication:
+                        found_b = True
+                except:
+                    pass
+
+            if found_b:
+                result = self.parts + [a * b]
+                if a_index > b_index:
+                    del result[a_index]
+                    del result[b_index]
+                else:
+                    del result[b_index]
+                    del result[a_index]
+
+                return Multiplication([simplify(x) for x in result])
+
+        return Multiplication([simplify(x) for x in self.parts])
+
+    def __mul__(self, other):
+        if type(other) is Multiplication:
+            return Multiplication(self.parts + other.parts)
+        else:
+            return Multiplication(self.parts + [other])
+
+    def __neg__(self):
+        if len(self.parts) == 0:
+            return Multiplication([])
+        else:
+            return Multiplication([-self.parts[0]] + self.parts[1:])
+
+    def __str__(self):
+        return "*".join(["(" + str(p) + ")" for p in self.parts])
+
+
 class Power(DefaultOperators):
     def __init__(self, a, b):
         self.a = a
@@ -244,3 +295,16 @@ class Complex(DefaultOperators):
 
     def __str__(self):
         return str(self.re) + "+" + str(self.im) + "i"
+
+x = Multiplication([
+    Addition([
+        Complex(Fraction(1, 3), Fraction(1, 4)),
+        Complex(Fraction(5, 2), Fraction(6, 3)),
+        3
+    ]),
+    Complex(Fraction(0, 1), Fraction(1, 1)),
+    3
+])
+
+print(x)
+print(simplify(x))
