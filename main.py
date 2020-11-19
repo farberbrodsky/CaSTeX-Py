@@ -21,7 +21,7 @@ def simplify(x):
 
 def approx(x):
     try:
-        return approx(x)
+        return x.approx()
     except:
         return x
 
@@ -35,6 +35,9 @@ class DefaultOperators:
 
     def __mul__(self, other):
         return Multiplication([self, other])
+
+    def __rmul__(self, other):
+        return other.__mul__(self)
 
     def __truediv__(self, other):
         return Fraction(self, other)
@@ -79,18 +82,12 @@ class Fraction(DefaultOperators):
         else:
             rb /= final_gcd
 
-        # Type-specific simplifications
-        if isinstance(ra, Complex) and isinstance(rb, Complex):
-            # Multiply both by the conjugate of the divisor
-            ra *= rb.conjugate()
-            rb *= rb.conjugate()
-            complex_gcd = ra.__gcd__(rb)
-            ra /= complex_gcd
-            rb /= complex_gcd
-            # Check whether rb is still complex, otherwise we can make it not
-            # complex
-            if rb.im == 0:
-                return ra / rb.re
+        if (type(ra) is not int or type(rb) is not int):
+            # support type-specific simplifications
+            try:
+                return ra / rb
+            except:
+                return Fraction(ra, rb)
         return Fraction(ra, rb)
 
     def __add__(self, other):
@@ -201,7 +198,7 @@ class Multiplication(DefaultOperators):
     def approx(self):
         final = 1
         for x in self.parts:
-            final *= approx(x)
+            final = final * approx(x)
         return final
 
     def simplified(self):
@@ -291,7 +288,7 @@ class Complex(DefaultOperators):
         self.im = im
 
     def approx(self):
-        return Complex(self.re.approx(), self.im.approx())
+        return Complex(approx(self.re), approx(self.im))
 
     def __add__(self, other):
         if type(other) is Complex:
@@ -313,9 +310,24 @@ class Complex(DefaultOperators):
 
     def __truediv__(self, other):
         if isinstance(other, Complex):
-            return Fraction(self, other)
+            ra = self
+            rb = other
+            # Multiply both by the conjugate of the divisor
+            ra *= rb.conjugate()
+            rb *= rb.conjugate()
+            complex_gcd = ra.__gcd__(rb)
+            ra /= complex_gcd
+            rb /= complex_gcd
+            # Check whether rb is still complex, otherwise we can make it not
+            # complex
+            if rb.im == 0:
+                return ra / rb.re
+            return Fraction(ra, rb)
         else:
-            return Complex(self.re / other, self.im / other)
+            try:
+                return Complex(self.re / other, self.im / other)
+            except:
+                return Fraction(self, other)
 
     def __gcd__(self, other):
         return gcd(gcd(self.re, other.re), gcd(self.im, other.im))
