@@ -240,10 +240,20 @@ class Power(DefaultOperators):
     def simplified(self):
         if self.b == 1:
             return self.a
+        elif type(self.a) == Power:
+            # (a^m)^n == a^(mn)
+            return Power(self.a.a, self.a.b * self.b)
         else:
             return Power(simplify(self.a), simplify(self.b))
-    # TODO implement all the algebra functions here, add, sub, mul, truediv,
-    # mod, neg
+
+    def __mul__(self, other):
+        # a^m * a^n = a^(m+n)
+        if type(other) is Power and self.a == other.a:
+            return Power(self.a, other.a + other.b)
+
+    def __str__(self):
+        return "(" + str(self.a) + ")^{" + str(self.b) + "}"
+    # TODO does not support negatives
 
 # TODO make irrational classes like Pi and E
 
@@ -296,15 +306,21 @@ class Complex(DefaultOperators):
     def __str__(self):
         return str(self.re) + "+" + str(self.im) + "i"
 
-x = Multiplication([
-    Addition([
-        Complex(Fraction(1, 3), Fraction(1, 4)),
-        Complex(Fraction(5, 2), Fraction(6, 3)),
-        3
-    ]),
-    Complex(Fraction(0, 1), Fraction(1, 1)),
-    3
-])
-
-print(x)
-print(simplify(x))
+# x = Multiplication([
+#     Addition([
+#         Complex(Fraction(1, 3), Fraction(1, 4)),
+#         Complex(Fraction(5, 2), Fraction(6, 3)),
+#         3
+#     ]),
+#     Complex(Fraction(0, 1), Fraction(1, 1)),
+#     3
+# ])
+#
+# print(x)
+# print(simplify(x))
+#
+# y = Multiplication([Power(3, 0.5), Power(4, 3)])
+# print(simplify(y))
+#
+# y = Multiplication([Power(3, 0.5), Power(3, 4)])
+# print(simplify(y))
