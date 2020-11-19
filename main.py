@@ -19,6 +19,13 @@ def simplify(x):
         return final_x
 
 
+def approx(x):
+    try:
+        return approx(x)
+    except:
+        return x
+
+
 class DefaultOperators:
     def __add__(self, other):
         return Addition([self, other])
@@ -40,6 +47,9 @@ class Fraction(DefaultOperators):
     def __init__(self, a, b):
         self.a = a
         self.b = b
+
+    def approx(self):
+        return approx(self.a) / approx(self.b)
 
     def whole_and_fraction(self):
         # Seperates 15/4 to 3, 3/4
@@ -137,6 +147,9 @@ class Addition(DefaultOperators):
     def __init__(self, parts):
         self.parts = parts
 
+    def approx(self):
+        return sum(approx(x) for x in self.parts)
+
     def simplified(self):
         if len(self.parts) == 0:
             return 0
@@ -185,9 +198,15 @@ class Multiplication(DefaultOperators):
     def __init__(self, parts):
         self.parts = parts
 
+    def approx(self):
+        final = 1
+        for x in self.parts:
+            final *= approx(x)
+        return final
+
     def simplified(self):
         if len(self.parts) == 0:
-            return 0
+            return 1
         elif len(self.parts) == 1:
             return self.parts[0]
         # Try to multiply different parts
@@ -237,6 +256,9 @@ class Power(DefaultOperators):
         self.a = a
         self.b = b
 
+    def approx(self):
+        return approx(self.a) ** approx(self.b)
+
     def simplified(self):
         if self.a != 0 and self.b == 0:
             return 1
@@ -267,6 +289,9 @@ class Complex(DefaultOperators):
     def __init__(self, re, im):
         self.re = re
         self.im = im
+
+    def approx(self):
+        return Complex(self.re.approx(), self.im.approx())
 
     def __add__(self, other):
         if type(other) is Complex:
