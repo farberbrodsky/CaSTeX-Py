@@ -19,7 +19,24 @@ def simplify(x):
         return final_x
 
 
-class Fraction:
+class DefaultOperators:
+    def __add__(self, other):
+        return Addition([self, other])
+
+    def __sub__(self, other):
+        return self + other.__neg__()
+
+    def __mul__(self, other):
+        pass
+
+    def __truediv__(self, other):
+        return Fraction(self, other)
+
+    def __eq__(self, other):
+        return str(self) == str(other)
+
+
+class Fraction(DefaultOperators):
     def __init__(self, a, b):
         self.a = a
         self.b = b
@@ -68,16 +85,16 @@ class Fraction:
 
     def __add__(self, other):
         if isinstance(other, Fraction):
-            return simplify(
-                Fraction(
-                    self.a *
-                    other.b +
-                    self.b *
-                    other.a,
-                    self.b *
-                    other.b))
+            return Fraction(
+                self.a *
+                other.b +
+                self.b *
+                other.a,
+                self.b *
+                other.b
+            )
         else:
-            return simplify(Fraction(self.a + other * self.b, self.b))
+            return Fraction(self.a + other * self.b, self.b)
 
     def __sub__(self, other):
         return self + other.__neg__()
@@ -116,88 +133,83 @@ class Fraction:
             return r"\frac{" + str(self.a) + "}{" + str(self.b) + "}"
 
 
-class Addition:
+class Addition(DefaultOperators):
+    def __init__(self, parts):
+        self.parts = parts
+
+    def simplified(self):
+        if len(self.parts) == 0:
+            return 0
+        elif len(self.parts) == 1:
+            return self.parts[0]
+        # Try to add different parts
+        for a_index, a in enumerate(self.parts):
+            found_b = False
+            for b_index, b in enumerate(self.parts):
+                if b_index == a_index:
+                    continue
+                try:
+                    x = a + b
+                    if x is not None and not type(x) is Addition:
+                        found_b = True
+                except:
+                    pass
+
+            if found_b:
+                result = self.parts + [a + b]
+                if a_index > b_index:
+                    del result[a_index]
+                    del result[b_index]
+                else:
+                    del result[b_index]
+                    del result[a_index]
+
+                return Addition([simplify(x) for x in result])
+
+        return Addition([simplify(x) for x in self.parts])
+
+    def __add__(self, other):
+        if type(other) is Addition:
+            return Addition(self.parts + other.parts)
+        else:
+            return Addition(self.parts + [other])
+
+    def __neg__(self):
+        return Addition([-x for x in self.parts])
+
+    def __str__(self):
+        return "+".join(["(" + str(p) + ")" for p in self.parts])
+
+
+class Power(DefaultOperators):
     def __init__(self, a, b):
         self.a = a
         self.b = b
 
     def simplified(self):
-        try:
-            return self.a + self.b
-        except:
-            return Addition(simplify(self.a), simplify(self.b))
-
-    def __add__(self, other):
-        # Try to add it to either A or B
-        ra = self.a  # result a
-        rb = self.b  # result b
-        could_add = False
-
-        try:
-            ra += other
-            could_add = True
-        except:
-            try:
-                rb += other
-                could_add = True
-            except:
-                pass
-
-        if could_add:
-            return Addition(ra, rb)
+        if self.b == 1:
+            return self.a
         else:
-            return Addition(Addition(self.a, self.b), other)
-
-    def __sub__(self, other):
-        # Try to subtract it from either A or B
-        ra = self.a  # result a
-        rb = self.b  # result b
-        could_sub = False
-
-        try:
-            ra -= other
-            could_sub = True
-        except:
-            try:
-                rb -= other
-                could_sub = True
-            except:
-                pass
-
-        if could_sub:
-            return Addition(ra, rb)
-        else:
-            return Addition(Addition(self.a, self.b), -other)
-
-    # TODO implement add, sub, mul, truediv, mod, neg, eq
-
-    def __str__(self):
-        return "(" + str(self.a) + ")+(" + str(self.b) + ")"
-
-
-class Power:
-    def __init__(self, a, b):
-        self.a = a
-        self.b = b
+            return Power(simplify(self.a), simplify(self.b))
     # TODO implement all the algebra functions here, add, sub, mul, truediv,
     # mod, neg
 
 # TODO make irrational classes like Pi and E
 
 
-class Complex:
+class Complex(DefaultOperators):
     def __init__(self, re, im):
         self.re = re
         self.im = im
 
     def __add__(self, other):
-        if isinstance(other, Complex):
+        if type(other) is Complex:
             return Complex(self.re + other.re, self.im + other.im)
-        else:
+        try:
+            # Try adding to real
             return Complex(self.re + other, self.im)
-
-    def __sub__(self, other):
-        return self + other.__neg__()
+        except:
+            return Addition([self, other])
 
     def __mul__(self, other):
         if isinstance(other, Complex):
@@ -210,7 +222,7 @@ class Complex:
 
     def __truediv__(self, other):
         if isinstance(other, Complex):
-            return simplify(Fraction(self, other))
+            return Fraction(self, other)
         else:
             return Complex(self.re / other, self.im / other)
 
@@ -232,9 +244,3 @@ class Complex:
 
     def __str__(self):
         return str(self.re) + "+" + str(self.im) + "i"
-
-
-x = Addition(Complex(Fraction(5, 1), Fraction(2, 1)) /
-             Complex(Fraction(7, 1), Fraction(4, 1)), 1)
-
-print(simplify(x))
