@@ -130,8 +130,11 @@ class Fraction(DefaultOperators):
             return Fraction(self.a, self.b.__neg__())
 
     def __eq__(self, other):
-        if other is Fraction:
-            return self.a == other.a and self.b == other.b
+        if type(other) is Fraction:
+            my_simplified = self.simplified()
+            other_simplified = other.simplified()
+            return (my_simplified.a == other_simplified.a and
+                    my_simplified.b == other_simplified.b)
         else:
             return self.a / self.b == other
 
