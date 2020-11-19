@@ -108,18 +108,20 @@ class Fraction(DefaultOperators):
 
     def __mul__(self, other):
         if isinstance(other, Fraction):
-            return simplify(Fraction(self.a * other.a, self.b * other.b))
+            return Fraction(self.a * other.a, self.b * other.b)
+        elif isinstance(other, type(self.a)):
+            return Fraction(self.a * other, self.b)
         else:
-            return simplify(Fraction(self.a * other, self.b))
+            return Multiplication([self, other])
 
     def __truediv__(self, other):
         if isinstance(other, Fraction):
-            return simplify(Fraction(self.a * other.b, self.b * other.a))
+            return Fraction(self.a * other.b, self.b * other.a)
         else:
-            return simplify(Fraction(self.a, self.b * other))
+            return Fraction(self.a, self.b * other)
 
     def __mod__(self, other):
-        return simplify(self - other * (self / other).whole_part())
+        return self - other * (self / other).whole_part()
 
     def __neg__(self):
         try:
@@ -184,6 +186,28 @@ class Addition(DefaultOperators):
         else:
             return Addition(self.parts + [other])
 
+    def __mul__(self, other):
+        if type(other) is Addition:
+            # Multiply every item in other by self and add it
+            new_parts = []
+            try:
+                for item in other:
+                    new_parts.append(self * item)
+                return Addition(new_parts)
+            except:
+                # Just a regular multiplication
+                return Multiplication([self, other])
+        else:
+            # Try to multiply other by everything
+            new_parts = []
+            try:
+                for part in self.parts:
+                    new_parts.append(part * other)
+                return Addition(new_parts)
+            except:
+                # Just a regular multiplication
+                return Multiplication([self, other])
+
     def __neg__(self):
         return Addition([-x for x in self.parts])
 
@@ -217,10 +241,15 @@ class Multiplication(DefaultOperators):
                     if x is not None and not type(x) is Multiplication:
                         found_b = True
                 except:
-                    pass
+                    try:
+                        x = b * a
+                        if x is not None and not type(x) is Multiplication:
+                            found_b = True
+                    except:
+                        pass
 
             if found_b:
-                result = self.parts + [a * b]
+                result = self.parts + [x]
                 if a_index > b_index:
                     del result[a_index]
                     del result[b_index]
@@ -274,6 +303,8 @@ class Power(DefaultOperators):
         # a^m * a^n = a^(m+n)
         if type(other) is Power and self.a == other.a:
             return Power(self.a, other.a + other.b)
+        else:
+            return Multiplication([self, other])
 
     def __str__(self):
         return "(" + str(self.a) + ")^{" + str(self.b) + "}"
