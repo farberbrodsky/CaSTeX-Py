@@ -160,6 +160,7 @@ def parser(tokens):
         while index < len(to_parse):
             val = to_parse[index]
             if index < len(to_parse) - 1 \
+                    and not is_frac \
                     and to_parse[index]["type"] != "undetermined" \
                     and to_parse[index + 1]["type"] != "undetermined":
                 parsed.append({
