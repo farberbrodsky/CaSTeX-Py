@@ -112,8 +112,10 @@ def parser(tokens):
             elif val["type"] == "undetermined" and val["v"] == r"\frac":
                 parsed.append({
                     "type": "fraction",
-                    "a": parse_fractions_rec([to_parse[index + 1]]),
-                    "b": parse_fractions_rec([to_parse[index + 2]])
+                    "items": [
+                        parse_fractions_rec([to_parse[index + 1]])[0],
+                        parse_fractions_rec([to_parse[index + 2]])[0]
+                    ]
                 })
                 index += 2
             else:
@@ -122,12 +124,45 @@ def parser(tokens):
 
         return parsed
 
-    # Pass 4: powers
-    # Pass 5: multiplication
-    # Pass 6: addition and subtraction
-
     fractioned = parse_fractions_rec(grouped)
 
-    return fractioned
+    def parse_operator_rec(to_parse, operator_variants, operator_name):
+        index = 0
+        parsed = []
+        while index < len(to_parse):
+            val = to_parse[index]
+            if index < (len(to_parse) - 1) \
+                    and to_parse[index + 1]["type"] == "undetermined" \
+                    and to_parse[index + 1]["v"] in operator_variants:
+                parsed.append({
+                    "type": operator_name,
+                    "items": [val, to_parse[index + 2]]
+                })
+                index += 3
+            else:
+                if "items" in val:
+                    parsed.append({
+                        "type": val["type"],
+                        "items": parse_operator_rec(
+                            val["items"],
+                            operator_variants,
+                            operator_name
+                        )
+                    })
+                else:
+                    parsed.append(val)
+                index += 1
+        return parsed
 
-pprint(parser(tokenize(latex)))
+    # Pass 4: powers
+    powered = parse_operator_rec(fractioned, ["^"], "power")
+    # Pass 5: multiplication
+    multiplied = parse_operator_rec(powered, ["*", r"\cdot"], "multiplication")
+    # Pass 6 (todo): Implied multiplication when there is no operator
+    # Pass 7: addition
+    added = parse_operator_rec(multiplied, ["+"], "addition")
+    # Pass 8: unary negative
+    # Pass 9: subtraction
+    return added
+
+print(parser(tokenize(latex)))
