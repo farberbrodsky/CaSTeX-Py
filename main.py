@@ -13,7 +13,7 @@ def simplify(x):
         while True:
             prev_final_x = final_x
             final_x = final_x.simplified()
-            if final_x == prev_final_x:
+            if type(final_x) == type(prev_final_x) and final_x == prev_final_x:
                 return final_x
     except:
         return final_x
@@ -289,6 +289,16 @@ class Power(DefaultOperators):
         return approx(self.a) ** approx(self.b)
 
     def simplified(self):
+        if type(self.b) is int and self.b >= 1:
+            # Try to multiply a by itself many times
+            try:
+                result = self.a
+                for i in range(self.b - 1):
+                    result = result * self.a
+                return result
+            except:
+                pass
+
         if self.a != 0 and self.b == 0:
             return 1
         elif self.b == 1:
@@ -323,6 +333,10 @@ class Complex(DefaultOperators):
 
     def approx(self):
         return Complex(approx(self.re), approx(self.im))
+
+    def simplified(self):
+        if self.im == 0:
+            return self.re
 
     def __add__(self, other):
         if type(other) is Complex:
@@ -380,7 +394,9 @@ class Complex(DefaultOperators):
         return False
 
     def __str__(self):
-        return str(self.re) + "+" + str(self.im) + "i"
+        if self.re != 0:
+            return str(self.re) + "+(" + str(self.im) + ")i"
+        return "(" + self.im() + ")i"
 
 # x = Multiplication([
 #     Addition([
