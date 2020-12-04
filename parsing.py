@@ -131,7 +131,7 @@ def parser(tokens):
         parsed = []
         while index < len(to_parse):
             val = to_parse[index]
-            if index < (len(to_parse) - 1) \
+            if index < (len(to_parse) - 2) \
                     and to_parse[index + 1]["type"] == "undetermined" \
                     and to_parse[index + 1]["v"] in operator_variants:
                 parsed.append({
@@ -154,15 +154,85 @@ def parser(tokens):
                 index += 1
         return parsed
 
-    # Pass 4: powers
-    powered = parse_operator_rec(fractioned, ["^"], "power")
-    # Pass 5: multiplication
+    def parse_implied_multiplication(to_parse, is_frac=False):
+        index = 0
+        parsed = []
+        while index < len(to_parse):
+            val = to_parse[index]
+            if index < len(to_parse) - 1 \
+                    and to_parse[index]["type"] != "undetermined" \
+                    and to_parse[index + 1]["type"] != "undetermined":
+                parsed.append({
+                    "type": "multiplication",
+                    "items": [val, to_parse[index + 1]]
+                })
+                index += 2
+            else:
+                if "items" in val:
+                    parsed.append({
+                        "type": val["type"],
+                        "items": parse_implied_multiplication(
+                            val["items"],
+                            is_frac=val["type"] == "fraction"
+                        )
+                    })
+                else:
+                    parsed.append(val)
+                index += 1
+        return parsed
+
+    # Pass 4: Implied multiplication when there is no operator
+    implicitly_multiplied = parse_implied_multiplication(fractioned)
+    # Pass 5: powers
+    powered = parse_operator_rec(implicitly_multiplied, ["^"], "power")
+    # Pass 6: multiplication
     multiplied = parse_operator_rec(powered, ["*", r"\cdot"], "multiplication")
-    # Pass 6 (todo): Implied multiplication when there is no operator
     # Pass 7: addition
     added = parse_operator_rec(multiplied, ["+"], "addition")
+
+    def parse_unary_negative(to_parse):
+        index = 0
+        parsed = []
+        while index < len(to_parse):
+            val = to_parse[index]
+            if index == 0 and len(to_parse) == 2 \
+                    and to_parse[0]["type"] == "undetermined" \
+                    and to_parse[1]["type"] != "undetermined":
+                return [{
+                    "type": "negative",
+                    "items": [val]
+                }]
+            else:
+                if "items" in val:
+                    parsed.append({
+                        "type": val["type"],
+                        "items": parse_unary_negative(
+                            val["items"]
+                        )
+                    })
+                else:
+                    parsed.append(val)
+                index += 1
+        return parsed
     # Pass 8: unary negative
+    unary_negatived = parse_unary_negative(added)
     # Pass 9: subtraction
-    return added
+    subtracted = parse_operator_rec(unary_negatived, ["-"], "subtraction")
+
+    def remove_undetermined(to_parse):
+        parsed = []
+        for val in to_parse:
+            if val["type"] == "undetermined":
+                continue
+            elif "items" in val:
+                parsed.append({
+                    "type": val["type"],
+                    "items": remove_undetermined(val["items"])
+                })
+            else:
+                parsed.append(val)
+        return parsed
+    # Pass 10: remove all undetermined
+    return remove_undetermined(subtracted)[0]
 
 print(parser(tokenize(latex)))
