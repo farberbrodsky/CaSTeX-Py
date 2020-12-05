@@ -15,7 +15,7 @@ def simplify(x):
                 return prev_final_x
             prev_final_x = final_x
             final_x = final_x.simplified()
-            if type(final_x) == type(prev_final_x) and str(final_x) == str(prev_final_x):
+            if type(final_x) == type(prev_final_x) and same_exactly(final_x, prev_final_x):
                 return final_x
     except:
         return final_x
@@ -32,6 +32,14 @@ def approx(x):
         return x.approx()
     except:
         return x
+
+def same_exactly(x, y):
+    if (type(x) == int and type(y) == int) or (type(x) == float and type(y) == float):
+        return x == y
+    try:
+        return x.same_exactly(y)
+    except:
+        return False
 
 
 class DefaultOperators:
@@ -51,6 +59,9 @@ class DefaultOperators:
         return Fraction(self, other)
 
     def __eq__(self, other):
+        return str(self) == str(other)
+
+    def same_exactly(self, other):
         return str(self) == str(other)
 
 
@@ -155,6 +166,9 @@ class Fraction(DefaultOperators):
             return True
         return False
 
+    def same_exactly(self, other):
+        return type(other) is Fraction and same_exactly(self.a, other.a) and same_exactly(self.b, other.b)
+
     def __str__(self):
         if self.b == 1:
             return str(self.a)
@@ -234,6 +248,14 @@ class Addition(DefaultOperators):
     def __str__(self):
         return "+".join(["(" + str(p) + ")" for p in self.parts])
 
+    def same_exactly(self, other):
+        if type(self) == type(other) and len(self.parts) == len(other.parts):
+            for part1, part2 in zip(self.parts, other.parts):
+                if not same_exactly(part1, part2):
+                    return False
+            return True
+        return False
+
 
 class Multiplication(DefaultOperators):
     def __init__(self, parts):
@@ -296,6 +318,14 @@ class Multiplication(DefaultOperators):
     def __str__(self):
         return "*".join(["(" + str(p) + ")" for p in self.parts])
 
+    def same_exactly(self, other):
+        if type(self) == type(other) and len(self.parts) == len(other.parts):
+            for part1, part2 in zip(self.parts, other.parts):
+                if not same_exactly(part1, part2):
+                    return False
+            return True
+        return False
+
 
 class Power(DefaultOperators):
     def __init__(self, a, b):
@@ -310,7 +340,7 @@ class Power(DefaultOperators):
             # Try to multiply a by itself many times
             try:
                 result = self.a
-                for i in range(self.b - 1):
+                for _ in range(self.b - 1):
                     result = result * self.a
                 return result
             except:
@@ -338,7 +368,9 @@ class Power(DefaultOperators):
 
     def __str__(self):
         return "(" + str(self.a) + ")^{" + str(self.b) + "}"
-    # TODO does not support negatives
+
+    def same_exactly(self, other):
+        return type(other) is Power and same_exactly(self.a, other.a) and same_exactly(self.b, other.b)
 
 # TODO make irrational classes like Pi and E
 
@@ -372,7 +404,17 @@ class Complex(DefaultOperators):
                 self.re * other.im + self.im * other.re
             )
         else:
-            return Complex(self.re * other, self.im * other)
+            try:
+                re = self.re * other
+            except:
+                re = other * self.re
+
+            try:
+                im = self.im * other
+            except:
+                im = other * self.im
+
+            return Complex(re, im)
 
     def __truediv__(self, other):
         if isinstance(other, Complex):
@@ -416,6 +458,10 @@ class Complex(DefaultOperators):
             return str(self.re) + "+(" + str(self.im) + ")i"
         return "(" + str(self.im) + ")i"
 
+
+    def same_exactly(self, other):
+        return type(other) is Complex and same_exactly(self.re, other.re) and same_exactly(self.im, other.im)
+
 # x = Multiplication([
 #     Addition([
 #         Complex(Fraction(1, 3), Fraction(1, 4)),
@@ -434,3 +480,7 @@ class Complex(DefaultOperators):
 #
 # print(x)
 # print(simplify(x))
+f = lambda x: Fraction(x, 1)
+x = Fraction(Addition([Multiplication([f(5), Complex(0, 1)]), 3]), Addition([7, Multiplication([2, Complex(0, 1)])]))
+print(x)
+print(simplify(x))
