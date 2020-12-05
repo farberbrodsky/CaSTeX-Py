@@ -77,7 +77,7 @@ class Fraction(DefaultOperators):
     def simplified(self):
         ra = simplify_once(self.a)  # result a
         rb = simplify_once(self.b)  # result b
-
+        
         if type(ra) is not int or type(rb) is not int:
             # support type-specific simplifications
             try:
@@ -354,7 +354,7 @@ class Complex(DefaultOperators):
     def simplified(self):
         if self.im == 0:
             return self.re
-        return self
+        return Complex(simplify_once(self.re), simplify_once(self.im))
 
     def __add__(self, other):
         if type(other) is Complex:
