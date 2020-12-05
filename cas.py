@@ -11,6 +11,8 @@ def simplify(x):
     final_x = x
     try:
         while True:
+            if final_x == None:
+                return prev_final_x
             prev_final_x = final_x
             final_x = final_x.simplified()
             if type(final_x) == type(prev_final_x) and final_x == prev_final_x:
@@ -67,27 +69,35 @@ class Fraction(DefaultOperators):
         return self.whole_and_fraction()[1]
 
     def simplified(self):
-        ra = self.a  # result a
-        rb = self.b  # result b
-        try:
-            final_gcd = ra.__gcd__(rb)
-        except:
-            final_gcd = gcd(ra, rb)
-        if isinstance(ra, int):
-            ra //= final_gcd
-        else:
-            ra /= final_gcd
-        if isinstance(rb, int):
-            rb //= final_gcd
-        else:
-            rb /= final_gcd
+        ra = simplify(self.a)  # result a
+        rb = simplify(self.b)  # result b
 
-        if (type(ra) is not int or type(rb) is not int):
+        if type(ra) is not int or type(rb) is not int:
             # support type-specific simplifications
             try:
-                return ra / rb
+                x = ra / rb
+                if x != None:
+                    return x
             except:
+                pass
+
+        try:
+            try:
+                final_gcd = ra.__gcd__(rb)
+            except:
+                final_gcd = gcd(ra, rb)
+            if final_gcd == None:
                 return Fraction(ra, rb)
+            if isinstance(ra, int):
+                ra //= final_gcd
+            else:
+                ra /= final_gcd
+            if isinstance(rb, int):
+                rb //= final_gcd
+            else:
+                rb /= final_gcd
+        except:
+            pass
         return Fraction(ra, rb)
 
     def __add__(self, other):
@@ -135,8 +145,6 @@ class Fraction(DefaultOperators):
             other_simplified = other.simplified()
             return (my_simplified.a == other_simplified.a and
                     my_simplified.b == other_simplified.b)
-        else:
-            return self.a / self.b == other
 
     def __str__(self):
         if self.b == 1:
