@@ -27,11 +27,13 @@ def simplify_once(x):
     except:
         return x
 
+
 def approx(x):
     try:
         return x.approx()
     except:
         return x
+
 
 def same_exactly(x, y):
     if (type(x) == int and type(y) == int) or (type(x) == float and type(y) == float):
@@ -88,7 +90,7 @@ class Fraction(DefaultOperators):
     def simplified(self):
         ra = simplify_once(self.a)  # result a
         rb = simplify_once(self.b)  # result b
-        
+
         if type(ra) is not int or type(rb) is not int:
             # support type-specific simplifications
             try:
@@ -458,29 +460,5 @@ class Complex(DefaultOperators):
             return str(self.re) + "+(" + str(self.im) + ")i"
         return "(" + str(self.im) + ")i"
 
-
     def same_exactly(self, other):
         return type(other) is Complex and same_exactly(self.re, other.re) and same_exactly(self.im, other.im)
-
-# x = Multiplication([
-#     Addition([
-#         Complex(Fraction(1, 3), Fraction(1, 4)),
-#         Complex(Fraction(5, 2), Fraction(6, 3)),
-#         3
-#     ]),
-#     Complex(Fraction(0, 1), Fraction(1, 1)),
-#     3
-# ])
-#
-# x = Multiplication([Power(3, 0.5), Power(4, 3)])
-#
-# x = Multiplication([Power(3, 0.5), Power(3, 4)])
-#
-# x = Power(Multiplication([Fraction(2, 3), Fraction(4, 5)]), 3)
-#
-# print(x)
-# print(simplify(x))
-f = lambda x: Fraction(x, 1)
-x = Fraction(Addition([Multiplication([f(5), Complex(0, 1)]), 3]), Addition([7, Multiplication([2, Complex(0, 1)])]))
-print(x)
-print(simplify(x))
