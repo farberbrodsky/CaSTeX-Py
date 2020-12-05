@@ -15,11 +15,17 @@ def simplify(x):
                 return prev_final_x
             prev_final_x = final_x
             final_x = final_x.simplified()
-            if type(final_x) == type(prev_final_x) and final_x == prev_final_x:
+            if type(final_x) == type(prev_final_x) and str(final_x) == str(prev_final_x):
                 return final_x
     except:
         return final_x
 
+
+def simplify_once(x):
+    try:
+        return x.simplified()
+    except:
+        return x
 
 def approx(x):
     try:
@@ -69,8 +75,8 @@ class Fraction(DefaultOperators):
         return self.whole_and_fraction()[1]
 
     def simplified(self):
-        ra = simplify(self.a)  # result a
-        rb = simplify(self.b)  # result b
+        ra = simplify_once(self.a)  # result a
+        rb = simplify_once(self.b)  # result b
 
         if type(ra) is not int or type(rb) is not int:
             # support type-specific simplifications
@@ -145,6 +151,9 @@ class Fraction(DefaultOperators):
             other_simplified = other.simplified()
             return (my_simplified.a == other_simplified.a and
                     my_simplified.b == other_simplified.b)
+        elif self.a == 0 and other == 0:
+            return True
+        return False
 
     def __str__(self):
         if self.b == 1:
@@ -187,9 +196,9 @@ class Addition(DefaultOperators):
                     del result[b_index]
                     del result[a_index]
 
-                return Addition([simplify(x) for x in result])
+                return Addition([simplify_once(x) for x in result])
 
-        return Addition([simplify(x) for x in self.parts])
+        return Addition([simplify_once(x) for x in self.parts])
 
     def __add__(self, other):
         if type(other) is Addition:
@@ -268,9 +277,9 @@ class Multiplication(DefaultOperators):
                     del result[b_index]
                     del result[a_index]
 
-                return Multiplication([simplify(x) for x in result])
+                return Multiplication([simplify_once(x) for x in result])
 
-        return Multiplication([simplify(x) for x in self.parts])
+        return Multiplication([simplify_once(x) for x in self.parts])
 
     def __mul__(self, other):
         if type(other) is Multiplication:
@@ -318,7 +327,7 @@ class Power(DefaultOperators):
             # (abc)^m = a^m * b^m * c^m
             return Multiplication([Power(a, self.b) for a in self.a.parts])
         else:
-            return Power(simplify(self.a), simplify(self.b))
+            return Power(simplify_once(self.a), simplify_once(self.b))
 
     def __mul__(self, other):
         # a^m * a^n = a^(m+n)
@@ -345,6 +354,7 @@ class Complex(DefaultOperators):
     def simplified(self):
         if self.im == 0:
             return self.re
+        return self
 
     def __add__(self, other):
         if type(other) is Complex:
