@@ -1,8 +1,4 @@
-from pprint import pprint
-
-latex = r"\left(54+\frac{31i}{4}\right)^{2+4}-\left(4i\cdot\left(\frac{3+i}{6}\right)\right)^{3}+4"
-# Remove \left and \right because they are purely for formatting
-latex = latex.replace(r"\left", "").replace(r"\right", "")
+from cas import Addition, Multiplication, Power, Fraction, Complex, simplify
 
 digits = "0123456789."
 constants = ["i", "e", r"\pi"]
@@ -236,4 +232,32 @@ def parser(tokens):
     # Pass 10: remove all undetermined
     return remove_undetermined(subtracted)[0]
 
-print(parser(tokenize(latex)))
+def to_math(parsed):
+    if parsed["type"] == "number":
+        return parsed["v"]
+    elif parsed["type"] == "multiplication":
+        return Multiplication([to_math(x) for x in parsed["items"]])
+    elif parsed["type"] == "negative":
+        return Multiplication([-1, parsed["items"][0]])
+    elif parsed["type"] == "addition":
+        return Addition([to_math(x) for x in parsed["items"]])
+    elif parsed["type"] == "subtraction":
+        return Addition([
+            to_math(parsed["items"][0]),
+            Multiplication([-1, to_math(parsed["items"][1])])
+        ])
+    elif parsed["type"] == "power":
+        return Power(to_math(parsed["items"][0]), to_math(parsed["items"][1]))
+    elif parsed["type"] == "fraction":
+        return Fraction(to_math(parsed["items"][0]), to_math(parsed["items"][1]))
+    elif parsed["type"] == "constant":
+        if parsed["v"] == "i":
+            return Complex(0, 1)
+    elif parsed["type"] in ["group", "brackets"] and len(parsed["items"]) == 1:
+        return to_math(parsed["items"][0])
+
+latex = r"\frac{5i+3}{2i+7}"
+# Remove \left and \right because they are purely for formatting
+latex = latex.replace(r"\left", "").replace(r"\right", "")
+
+print(simplify(to_math(parser(tokenize(latex)))))

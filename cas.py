@@ -396,7 +396,7 @@ class Complex(DefaultOperators):
     def __str__(self):
         if self.re != 0:
             return str(self.re) + "+(" + str(self.im) + ")i"
-        return "(" + self.im() + ")i"
+        return "(" + str(self.im) + ")i"
 
 # x = Multiplication([
 #     Addition([
